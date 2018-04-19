@@ -24,6 +24,7 @@ def pathFinder(position, velocity, feather_factor, dt):
     the path the object took through the air. With drag calculations.
     '''
     
+    # Defining norm here saves a bit of time.
     norm = np.linalg.norm
     old_position = position
     old_velocity = velocity
@@ -31,20 +32,29 @@ def pathFinder(position, velocity, feather_factor, dt):
     path = np.array([[t, old_position[0], old_position[1]]])
 
     while 1:
+        
+        # Compute new position.
         new_position = old_position + old_velocity*dt
-        # This loop shrinks dt just before collision
-        # with the ground, unless dt is already very small.
+        
+        # If new position is below ground (unless dt is already very small),
+        # then shrink dt and compute new position again until new
+        # position is NOT below ground or dt is too small.
         while new_position[1] < 0 and dt > 1e-9:
             dt = dt/2
             new_position = old_position + old_velocity*dt
+        
+        # If dt has been shrunk to very small and the new position
+        # is STILL below ground, call it quits and break.
         if new_position[1] < 0 and dt <= 1e-9:
             break
         
+        # If the current velocity is zero, do not calculate any drag.
         if old_velocity[0] == 0 and old_velocity[1] == 0:
             new_velocity = old_velocity + g*dt
         else:
         #                             air density * c/m            v**2                     -v hat
             new_velocity = old_velocity + (61.25e-3*(feather_factor)*(norm(old_velocity)**2)*(-old_velocity/norm(old_velocity)) + g)*dt
+
 
         old_position = new_position
         old_velocity = new_velocity
@@ -55,10 +65,7 @@ def pathFinder(position, velocity, feather_factor, dt):
     return path
 def noDrag(position, velocity, dt):
     '''
-    Simulate the path of an object with a given initial position and veloctiy.
-    Run until object collides with the ground. Return the time at which the object
-    collides with the ground, and a list of timestamped coordinates, giving
-    the path the object took through the air. without drag calculations.
+    Same as pathFinder but with no drag.
     '''
     def norm(v):
         if v.all() == 0:
@@ -99,7 +106,7 @@ def diff_with_h():
     return t_diff
 # t_diff = diff_with_h()
 def diff_with_v():
-    # This function find the difference in landing
+    # This function finds the difference in landing
     # times as a function of launch velocity.
     t_diff = np.empty(1000)
     for i in range(0,1000):
@@ -109,7 +116,7 @@ def diff_with_v():
     return t_diff
 #t_diff = diff_with_v()
 def diff_with_ff():
-    # This function find the difference in landing
+    # This function finds the difference in landing
     # times as a function of the "feather factor" C/m.
     t_diff = np.empty(1000)
     for i in range(0,1000):
@@ -120,19 +127,20 @@ def diff_with_ff():
 #t_diff = diff_with_ff()
 
 path1 = np.transpose(pathFinder(p, v1, 0.01, 0.1))
-plt.semilogy(path1[0], path1[2])
-del path1
 path2 = np.transpose(pathFinder(p, v1, 0.01, 0.01))
-plt.semilogy(path2[0], path2[2])
-del path2
 path3 = np.transpose(pathFinder(p, v1, 0.01, 0.001))
-plt.semilogy(path3[0], path3[2])
-del path3
 path4 = np.transpose(pathFinder(p, v1, 0.01, 0.0001))
-plt.semilogy(path4[0], path4[2])
-del path4
-plt.ylim(0.01,40)
+
+plt.semilogy(path1[0], path1[2], label='$\Delta t=0.1$')
+plt.semilogy(path2[0], path2[2], label='$\Delta t=0.01$')
+plt.semilogy(path3[0], path3[2], label='$\Delta t=0.001$')
+plt.semilogy(path4[0], path4[2], label='$\Delta t=0.0001$')
+
+plt.ylim(0.001, 5)
 plt.xlim(33.9,33.94)
+plt.ylabel('Altitude (m)', fontsize=20)
+plt.xlabel('Time (s)', fontsize=20)
+plt.legend(fontsize=14)
 plt.savefig('differing dt.pdf', bbox_inches='tight')
 plt.show()
 
