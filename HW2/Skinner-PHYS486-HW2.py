@@ -15,7 +15,7 @@ v1 = np.array([10,0])
 h0 = 3.16557766e3
 p = np.array([0,h0])
 
-# These functions perform the actual calculations.
+# These functions perform actual calculations.
 def pathFinder(position, velocity, feather_factor, dt):
     '''
     Simulate the path of an object with a given initial position and veloctiy.
@@ -125,19 +125,41 @@ def diff_with_ff():
         t_diff[i] = path2[0][-1] - path1[0][-1]
     return t_diff
 #t_diff = diff_with_ff()
+def deliverables():
+    '''
+    Create the deliverables!
+    '''
 
+    # Save the path.
+    path = pathFinder(p, v1, 0.01, 0.01)
+    t, x, y = np.transpose(path)[0], np.transpose(path)[1], np.transpose(path)[2]
+    
+    # Write the path to a file, with nice formatting.
+    data = open('Skinner-PHYS486-HW2.tbl', 'w')
+    print(' t', '\t\t', 'x', '\t\t', 'y', file = data)
+    for i in range(len(t)):
+        if len('{:.4f}'.format(t[i])) == 6:
+            print('', '{:.4f}'.format(t[i]), '\t', '{:.4f}'.format(x[i]), '\t', '{:.4f}'.format(y[i]), file = data)
+        else:
+            print('{:.4f}'.format(t[i]), '\t', '{:.4f}'.format(x[i]), '\t', '{:.4f}'.format(y[i]), file = data)
+    data.close()
+    return
+#deliverables()
+
+
+# Assorted plot code (very boring)
+'''
+# Show how the outcomes change as dt shrinks.
 path1 = np.transpose(pathFinder(p, v1, 0.01, 0.1))
 path2 = np.transpose(pathFinder(p, v1, 0.01, 0.01))
 path3 = np.transpose(pathFinder(p, v1, 0.01, 0.001))
 path4 = np.transpose(pathFinder(p, v1, 0.01, 0.0001))
-
 plt.semilogy(path1[0], path1[2], label='$\Delta t=0.1$')
 plt.semilogy(path2[0], path2[2], label='$\Delta t=0.01$')
 plt.semilogy(path3[0], path3[2], label='$\Delta t=0.001$')
 plt.semilogy(path4[0], path4[2], label='$\Delta t=0.0001$')
-
 plt.ylim(0.001, 5)
-plt.xlim(33.9,33.94)
+plt.xlim(33.91,33.94)
 plt.ylabel('Altitude (m)', fontsize=20)
 plt.xlabel('Time (s)', fontsize=20)
 plt.legend(fontsize=14)
@@ -145,8 +167,7 @@ plt.savefig('differing dt.pdf', bbox_inches='tight')
 plt.show()
 
 
-# Assorted plot code (very boring)
-'''
+
 plt.plot(np.linspace(0,0.999,num=1000), t_diff)
 plt.xlim(0,1)
 plt.ylim(0,t_diff[-1])
