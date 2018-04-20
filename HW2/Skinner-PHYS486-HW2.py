@@ -4,8 +4,6 @@ from matplotlib import rcParams
 rcParams['xtick.direction'] = 'in'
 rcParams['ytick.direction'] = 'in'
 
-# Define input variables and constants.
-g = np.array([0,-9.81]) #m/s^2
 
 # Initial velocity of objects 1 & 2.
 v0 = np.array([0,0]) #m/s
@@ -24,12 +22,18 @@ def pathFinder(position, velocity, feather_factor, dt):
     the path the object took through the air. With drag calculations.
     '''
     
-    # Defining norm here saves a bit of time.
+    
     norm = np.linalg.norm
+    
+    # This is a perhaps ill-wrought attempt at optimization
+    array = np.array
+    g = array([0,-9.81]) #m/s^2
+    append = np.append
+    
     old_position = position
     old_velocity = velocity
     t=0
-    path = np.array([[t, old_position[0], old_position[1]]])
+    path = array([[t, old_position[0], old_position[1]]])
 
     while 1:
         
@@ -47,7 +51,6 @@ def pathFinder(position, velocity, feather_factor, dt):
         # is STILL below ground, call it quits and break.
         if new_position[1] < 0 and dt <= 1e-9:
             break
-        
         # If the current velocity is zero, do not calculate any drag.
         if old_velocity[0] == 0 and old_velocity[1] == 0:
             new_velocity = old_velocity + g*dt
@@ -60,17 +63,15 @@ def pathFinder(position, velocity, feather_factor, dt):
         old_velocity = new_velocity
 
         t += dt
-        path = np.append(path, [[t, old_position[0], old_position[1]]], axis=0)
+        path = append(path, [[t, old_position[0], old_position[1]]], axis=0)
 
     return path
 def noDrag(position, velocity, dt):
     '''
     Same as pathFinder but with no drag.
     '''
-    def norm(v):
-        if v.all() == 0:
-            return 1
-        return np.linalg.norm(v)
+
+    g = np.array([0,-9.81]) #m/s^2
 
     old_position = position
     old_velocity = velocity
@@ -98,30 +99,37 @@ def noDrag(position, velocity, dt):
 def diff_with_h():
     # This function finds the difference in landing
     # times as a function of height.
+    array = np.array
+    transpose = np.transpose
     t_diff = np.empty(1000)
     for i in range(0,1000):
-        path2 = np.transpose(pathFinder(np.array([0,i]), v2, 5e-3, 0.01))
-        path1 = np.transpose(pathFinder(np.array([0,i]), v1, 5e-3, 0.01))
+        path2 = transpose(pathFinder(np.array([0,i]), array([10,0]), 0.01, 0.01))
+        path1 = transpose(pathFinder(np.array([0,i]), array([0,0]), 0.01, 0.01))
         t_diff[i] = path2[0][-1] - path1[0][-1]
     return t_diff
-# t_diff = diff_with_h()
+#t_diff = diff_with_h()
 def diff_with_v():
     # This function finds the difference in landing
     # times as a function of launch velocity.
+    array = np.array
+    p = array([0,3.16557766e3])
+    transpose = np.transpose
     t_diff = np.empty(1000)
     for i in range(0,1000):
-        path2 = np.transpose(pathFinder(p, np.array([i,0]), 5e-3, 0.01))
-        path1 = np.transpose(pathFinder(p, np.array([0,0]), 5e-3, 0.01))
+        path2 = transpose(pathFinder(p, array([i,0]), 0.01, 0.1))
+        path1 = transpose(pathFinder(p, array([0,0]), 0.01, 0.1))
         t_diff[i] = path2[0][-1] - path1[0][-1]
     return t_diff
-#t_diff = diff_with_v()
+t_diff = diff_with_v()
 def diff_with_ff():
     # This function finds the difference in landing
     # times as a function of the "feather factor" C/m.
+    array = np.array
     t_diff = np.empty(1000)
+    transpose = np.transpose
     for i in range(0,1000):
-        path2 = np.transpose(pathFinder(p, np.array([0,0]), i/1000, 0.01))
-        path1 = np.transpose(pathFinder(p, np.array([0,0]), 5e-3, 0.01))
+        path2 = transpose(pathFinder(array([0,3.16557766e3]), array([10,0]), i/1000, 0.1))
+        path1 = transpose(pathFinder(array([0,3.16557766e3]), array([0,0]), i/1000, 0.1))
         t_diff[i] = path2[0][-1] - path1[0][-1]
     return t_diff
 #t_diff = diff_with_ff()
@@ -166,18 +174,17 @@ plt.legend(fontsize=14)
 plt.savefig('differing dt.pdf', bbox_inches='tight')
 plt.show()
 
-
-
-plt.plot(np.linspace(0,0.999,num=1000), t_diff)
-plt.xlim(0,1)
+'''
+plt.plot(np.linspace(0,999,num=1000), t_diff)
+plt.xlim(0,1000)
 plt.ylim(0,t_diff[-1])
 plt.ylabel('Difference in Landing Time (s)', fontsize=20)
-plt.xlabel('C/m (units?)', fontsize=20)
-#plt.savefig('time and ff.pdf', bbox_inches='tight')
+plt.xlabel('Initial Velocity (m/s)', fontsize=20)
+plt.savefig('time and v.pdf', bbox_inches='tight')
 plt.show()
-
-path0 = np.transpose(noDrag(p, np.array([0,0]), 0.01))
-path1 = np.transpose(pathFinder(p, np.array([0,0]), 5e-3, 0.01))
+'''
+path0 = np.transpose(pathFinder(p, np.array([0,0]), 0.001, 0.01))
+path1 = np.transpose(pathFinder(p, np.array([10,0]), 0.001, 0.01))
 #path2 = np.transpose(pathFinder(p, np.array([0.00001,0]), 5e-3, 0.01))
 plt.plot(path0[0], path0[2])
 plt.plot(path1[0], path1[2])
@@ -187,8 +194,8 @@ plt.plot(path1[0], path1[2])
 plt.show()
 plt.clf()
 
-plt.plot(path0[1], path0[2])
-plt.plot(path1[1], path1[2])
+plt.plot(path1[0], path1[2])
+plt.plot(path2[0], path2[2])
 #plt.plot(path2[1], path2[2])
 plt.show()
 '''
