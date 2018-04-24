@@ -41,7 +41,7 @@ def main(mass_factor, sim_time, dt):
     # Initial velocities of the 3 bodies. [x, y] (m/s)
     v_sun, v_earth, v_jupiter = array([0, 0]), array([0, -ev_min]), array([0, jv_min])
 
-    # Adjust the initial velocity of Sol such that the  net momentum of the system is 0.
+    # Adjust the initial velocity of Sol such that the net momentum of the system is 0.
     v_sun = -(m_earth*v_earth + m_jupiter*v_jupiter)/m_sun
 
     # Store this info in a single variable (easier to pass to function).
@@ -131,19 +131,21 @@ def main(mass_factor, sim_time, dt):
     
     return paths
 
-paths = main(1, 36, 100)
+paths = main(500, 12, 10000)
 
 plt.figure(figsize=(8,8))
 plt.axes().set_aspect('equal', 'datalim')
-plt.plot(paths[1], paths[2], lw=1)
-plt.plot(paths[3], paths[4], lw=1)
+plt.plot(paths[1], paths[2], lw=0.11)
+plt.plot(paths[3], paths[4], lw=0.1)
 plt.plot(paths[5], paths[6], lw=1)
 plt.savefig('Orbital Paths.pdf', bbox_inches='tight')
 plt.show()
 plt.clf()
 
+'''
 #plt.plot(paths[1], paths[2], lw=0.1)
 plt.plot(paths[3][0::315569], paths[4][0::315569], lw=1)
 #plt.plot(paths[5], paths[6], lw=0.1)
 plt.savefig('Earth Poincare.pdf', bbox_inches='tight')
 plt.show()
+'''
