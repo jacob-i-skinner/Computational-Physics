@@ -15,7 +15,7 @@ All internal calculations are in SI units.
 def main(mass_factor, sim_time, dt):
     array = np.array
 
-
+    G = 6.67428e-11
 
     # Masses of the 3 bodies. (kg)
     m_sun, m_earth, m_jupiter = 1.989e30, 5.972e24, 1.898e27*mass_factor
@@ -28,18 +28,22 @@ def main(mass_factor, sim_time, dt):
 
     # Initial positions of the 3 bodies. [x, y] (m)
     # Each planet is initialized at its aphelion, on opposite sides of the sun.
-    r_sun, r_earth, r_jupiter = array([0, 0]), array([-1.521e11, 0]), array([8.1662e11, 0])
+    ap_sun, ap_earth, ap_jupiter = array([0, 0]), array([-1.521e11, 0]), array([8.1662e11, 0])
 
     # Reposition each body such that [0,0] is the center of mass of the system.
-    CoM = -(m_earth*r_earth + m_jupiter*r_jupiter)/(m_sun + m_earth + m_jupiter)
-    r_sun, r_earth, r_jupiter = r_sun + CoM, r_earth + CoM, r_jupiter + CoM
-    
-    # Calculate initial velocities for the two planets at aphelion using v_min (4.11) from Giordano.
-    ev_min = ((6.67428e-11*m_sun)*((1-e_earth)/(a_earth*(1+e_earth)))*(1+m_earth/m_sun))**(1/2)
-    jv_min = ((6.67428e-11*m_sun)*((1-e_jupiter)/(a_jupiter*(1+e_jupiter)))*(1+m_jupiter/m_sun))**(1/2)
+    CoM = -(m_earth*ap_earth + m_jupiter*ap_jupiter)/(m_sun + m_earth + m_jupiter)
+    r_sun, r_earth, r_jupiter = ap_sun + CoM, ap_earth + CoM, ap_jupiter + CoM
 
+    # Calculate initial velocities for the two planets at aphelion using v_min (4.11) from Giordano.
+    ev_min = ((G*m_sun)*((1-e_earth)/(a_earth*(1+e_earth)))*(1+m_earth/m_sun))**(1/2)
+    jv_min = ((G*m_sun)*((1-e_jupiter)/(a_jupiter*(1+e_jupiter)))*(1+(m_jupiter/mass_factor/m_sun)))**(1/2)
+    
     # Initial velocities of the 3 bodies. [x, y] (m/s)
     v_sun, v_earth, v_jupiter = array([0, 0]), array([0, -ev_min]), array([0, jv_min])
+
+    #print('Distance to foci (CoM)', r_jupiter[0])
+    #print('Semi-major axis', r_jupiter[0]*(1+e_jupiter)/(1-e_jupiter**2))
+
 
     # Adjust the initial velocity of Sol such that the net momentum of the system is 0.
     v_sun = -(m_earth*v_earth + m_jupiter*v_jupiter)/m_sun
@@ -63,7 +67,7 @@ def main(mass_factor, sim_time, dt):
         sep_norm = norm(sep)
 
         # return F = GM/R^2
-        return   sep*(6.67428e-11*m)/sep_norm**3
+        return   sep*(6.67428e-11*m)/(sep_norm**3)
     def pathFinder(T, dt, b1, b2, b3):
         '''
         Takes in a run time, delta-t, and info for 3 bodies.
@@ -81,7 +85,7 @@ def main(mass_factor, sim_time, dt):
         m2, old_p2, old_v2 = b2[0], b2[1], b2[2]
         m3, old_p3, old_v3 = b3[0], b3[1], b3[2]
 
-        paths = np.empty((int(round(T/dt, 0)), 7))
+        paths = np.empty((round(T/dt), 7))
 
         # Yes, I know this is structured in a silly way.
         #        time  x1         y1         x2         y2         x3         y3
@@ -101,8 +105,9 @@ def main(mass_factor, sim_time, dt):
 
         paths[1] = [t, p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]]
 
-        # Now use the "velocity verlet" technique to step orbits forward.
-        for i in range(int(round(T/dt, 0))):
+        # Now use the "velocity verlet" technique to step positions forward
+        # from the already determined first two values.
+        for i in range(2, round(T/dt)):
             new_p1 = 2*p1 + (accelerator(norm, m2, p2, p1) + accelerator(norm, m3, p3, p1))*dt**2 - old_p1
             new_p2 = 2*p2 + (accelerator(norm, m1, p1, p2) + accelerator(norm, m3, p3, p2))*dt**2 - old_p2
             new_p3 = 2*p3 + (accelerator(norm, m1, p1, p3) + accelerator(norm, m2, p2, p3))*dt**2 - old_p3
@@ -131,16 +136,16 @@ def main(mass_factor, sim_time, dt):
     
     return paths
 
-paths = main(500, 12, 10000)
-
 plt.figure(figsize=(8,8))
 plt.axes().set_aspect('equal', 'datalim')
-plt.plot(paths[1], paths[2], lw=0.11)
-plt.plot(paths[3], paths[4], lw=0.1)
+plt.grid()
+paths = main(1000, 64, 10000)
+print(0.5*(np.max(paths[5])-np.min(paths[5])))
+plt.plot(paths[1], paths[2], lw=1)
+plt.plot(paths[3], paths[4], lw=1)
 plt.plot(paths[5], paths[6], lw=1)
 plt.savefig('Orbital Paths.pdf', bbox_inches='tight')
 plt.show()
-plt.clf()
 
 '''
 #plt.plot(paths[1], paths[2], lw=0.1)
