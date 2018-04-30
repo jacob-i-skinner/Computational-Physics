@@ -85,11 +85,11 @@ def main(mass_factor, sim_time, dt):
         m2, old_p2, old_v2 = b2[0], b2[1], b2[2]
         m3, old_p3, old_v3 = b3[0], b3[1], b3[2]
 
-        paths = np.empty((round(T/dt), 7))
+        paths = np.empty((round(T/dt), 6))
 
         # Yes, I know this is structured in a silly way.
         #        time  x1         y1         x2         y2         x3         y3
-        paths[0] = [t, old_p1[0], old_p1[1], old_p2[0], old_p2[1], old_p3[0], old_p3[1]]
+        paths[0] = [old_p1[0], old_p1[1], old_p2[0], old_p2[1], old_p3[0], old_p3[1]]
 
         # Use Heun's method to update positions of each body.
         p1_bar = old_p1 + old_v1*dt
@@ -103,7 +103,7 @@ def main(mass_factor, sim_time, dt):
 
         t += dt
 
-        paths[1] = [t, p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]]
+        paths[1] = [p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]]
 
         # Now use the "velocity verlet" technique to step positions forward
         # from the already determined first two values.
@@ -124,7 +124,7 @@ def main(mass_factor, sim_time, dt):
 
             t += dt
 
-            paths[i] = [t, p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]]
+            paths[i] = [p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]]
         
         return paths
 
@@ -139,12 +139,16 @@ def main(mass_factor, sim_time, dt):
 plt.figure(figsize=(8,8))
 plt.axes().set_aspect('equal', 'datalim')
 plt.grid()
-paths = main(1000, 64, 10000)
-print(0.5*(np.max(paths[5])-np.min(paths[5])))
-plt.plot(paths[1], paths[2], lw=1)
-plt.plot(paths[3], paths[4], lw=1)
-plt.plot(paths[5], paths[6], lw=1)
-plt.savefig('Orbital Paths.pdf', bbox_inches='tight')
+# Fecth the paths, but in AU.
+paths = main(1000, 500, 100000)/149597870700
+
+plt.plot(paths[0], paths[1], lw=0.1)
+plt.plot(paths[2], paths[3], lw=0.1)
+plt.plot(paths[4], paths[5], lw=0.1)
+plt.title('3-Body Simulation of Earth, Sol, and Jupiter.\nMass of Jupiter = $1000M_J$')
+plt.ylabel('y (AU)')
+plt.xlabel('x (AU)')
+plt.savefig('Orbital Paths1000.pdf', bbox_inches='tight')
 plt.show()
 
 '''
