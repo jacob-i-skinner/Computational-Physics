@@ -85,7 +85,7 @@ def main(mass_factor, sim_time, dt):
         m2, old_p2, old_v2 = b2[0], b2[1], b2[2]
         m3, old_p3, old_v3 = b3[0], b3[1], b3[2]
 
-        paths = np.empty((round(T/dt), 6))
+        paths = np.empty((round(T/dt), 6), dtype=float)
 
         # Yes, I know this is structured in a silly way.
         #        time  x1         y1         x2         y2         x3         y3
@@ -140,7 +140,7 @@ plt.figure(figsize=(8,8))
 plt.axes().set_aspect('equal', 'datalim')
 plt.grid()
 # Fecth the paths, but in AU.
-paths = main(1000, 500, 100000)/149597870700
+paths = main(1000, 1000, 10000)/149597870700
 
 plt.plot(paths[0], paths[1], lw=0.1)
 plt.plot(paths[2], paths[3], lw=0.1)
@@ -148,7 +148,7 @@ plt.plot(paths[4], paths[5], lw=0.1)
 plt.title('3-Body Simulation of Earth, Sol, and Jupiter.\nMass of Jupiter = $1000M_J$')
 plt.ylabel('y (AU)')
 plt.xlabel('x (AU)')
-plt.savefig('Orbital Paths1000.pdf', bbox_inches='tight')
+#plt.savefig('Orbital Paths1000.pdf', bbox_inches='tight')
 plt.show()
 
 '''
