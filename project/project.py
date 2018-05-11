@@ -11,32 +11,41 @@ then steps into a velocity verlet loop until complete.
 All internal calculations are in SI units.
 '''
 
-def accelerator(r, r_venus, t):
-    # Calculates the acceleration due to Sol and Venus.
+def r_venus(t):
+    '''
+    Because Venus' position is approximated as perfectly circular,
+    attracted only by the sun, it moves about the sun at constant
+    radius with a constant angular velocity.
+    '''
+
+    # position = r(sin(wt), cos(wt))
+
+    r_venus  = 1.08208e11*np.array([np.cos(2*np.pi*t/1.941436081e7),
+                          np.sin(2*np.pi*t/1.941436081e7)])
+    
+    return r_venus
+
+def accelerator(r, t):
+    # Calculate the acceleration at r due to Sol and Venus.
 
     # Find the acceleration due to venus
-    venus_sep      = r-r_venus
-    venus_sep_norm = np.norm(sep)
+    venus_sep      = r-r_venus(t)
+    venus_sep_norm = np.norm(venus_sep)
     
     # A = GM/R^2.
-    venus_accel  = sep*(6.67428e-11*4.867488088236164e+24)/(sep_norm**3)
+    venus_accel  = sep*(6.67428e-11*4.867488088236164e+24)/(venus_sep_norm**3)
 
     sol_sep      = -r
-    sol_sep_norm = np.norm(sep)
-    sol_accel    = sep*(6.67428e-11*1.989e30)/(sep_norm**3)
+    sol_sep_norm = np.norm(sol_sep)
+    sol_accel    = sep*(6.67428e-11*1.989e30)/(sol_sep_norm**3)
 
     return venus_accel + sol_accel
+#TODO: Make pathfinder loop over each row of a "swarm" array 
 def pathFinder(T, dt, swarm):
     '''
     Takes in a run time, delta-t, and info for 3 bodies.
     Returns timestamped coordinates for the specified run time.
     '''
-    
-    # Initial velocity of Venus.
-    r_venus  = np.array([1.08208e11, 0])
-
-    # Period of Venus.
-    p_venus = 1.941436081e7
     
     # Convert T from years to seconds.
     T = T*31556926
