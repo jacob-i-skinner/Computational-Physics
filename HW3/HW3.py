@@ -53,6 +53,8 @@ def main(mass_factor, sim_time, dt):
     Earth = [m_earth, r_earth, v_earth]
     Jupiter = [m_jupiter, r_jupiter, v_jupiter]
 
+    print(Earth[2])
+
     def accelerator(norm, m, r, r0):
         '''
         Calculates the acceleration due to Gravity
