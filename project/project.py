@@ -167,6 +167,16 @@ def L_points():
     L5 = 1.08208e11*np.array([1, -np.sqrt(3)])/2
 
     return [np.array([L1,0]), np.array([L2,0]), np.array([L3,0]), L4, L5]
+def L_1(t):
+    return 107200101984.93997*np.array([np.cos(2*t*np.pi/1.941436081e7), np.sin(2*t*np.pi/1.941436081e7)])
+def L_2(t):
+    return 109222195896.43077*np.array([np.cos(2*t*np.pi/1.941436081e7), np.sin(2*t*np.pi/1.941436081e7)])
+def L_3(t):
+    return -108207845529.61938*np.array([np.cos(2*t*np.pi/1.941436081e7), np.sin(2*t*np.pi/1.941436081e7)])
+def L_4(t):
+    return 1.08208e11*np.array([np.cos(2*t*np.pi/1.941436081e7 + np.pi/3), np.sin(2*t*np.pi/1.941436081e7 + np.pi/3)])
+def L_5(t):
+    return 1.08208e11*np.array([np.cos(2*t*np.pi/1.941436081e7 - np.pi/3), np.sin(2*t*np.pi/1.941436081e7 - np.pi/3)])
 #print(L_points())
 # Initialize Lagrangian points with appropriate velocities.
 L1 = np.array([107200101984.93997, 0, 0, 34693.807965750275])
@@ -182,7 +192,7 @@ T = 1000
 dt = 100000
 
 # Swarm shape: (number of objects, coords)
-swarm = np.array([L1, L2, L3, L4])
+swarm = np.array([L1, L2, L3, L4, L5])
 
 # Calculate swarm trajectories.
 start = time.time()
@@ -194,36 +204,55 @@ print(paths.shape)
 
 
 # Plot orbital paths
-time = np.linspace(0, T*31556926, round(T*31556926/dt))
+time = np.linspace(0, T*31556926*0.615198, round(T*31556926*0.615198/dt))
 venus = r_venus(time)
 
-'''
 plt.figure(figsize=(8,8))
 plt.axes().set_aspect('equal', 'datalim')
 plt.grid()
 plt.plot(venus[0],venus[1], label='Venus')
 #plt.scatter(0,0, s=1e3, c='y', label='Sun')
 # Plot the swarm.
-for i in range(paths.shape[1]):
-    plt.plot(paths[:,i,0], paths[:,i,1], label='L%s'%(i+1))
+#for i in range(paths.shape[1]):
+#    plt.plot(paths[:,i,0], paths[:,i,1], label='L%s'%(i+1))
+
+plt.plot(paths[:,2,0], paths[:,2,1], label='L%s'%(3))
+
 plt.legend(fontsize=18)
-plt.savefig('lagrange paths.png', bbox_inches='tight', dpi=300)
+#plt.savefig('lagrange paths.png', bbox_inches='tight', dpi=300)
 plt.show()
 plt.clf()
-'''
 
-#Plot Poincare sections
+'''
+#Plot positions
 plt.figure(figsize=(8,8))
 #plt.axes().set_aspect('equal', 'datalim')
 plt.grid()
-plt.plot(venus[0::194],venus[1::194], '.', label='Venus')
-del venus, time
+#plt.plot(venus[0::194],venus[1::194], '.', label='Venus')
 # Plot the swarm.
-for i in range(paths.shape[1]):
-    p_mag = np.linalg.norm(np.array([paths[::194,i,0], paths[::194,i,1]]))
-    v_mag = np.linalg.norm(np.array([paths[::194,i,2], paths[::194,i,3]]))
-    plt.plot(p_mag, v_mag, '.', label='L%s'%(i+1))
-plt.legend(fontsize=18)
-plt.savefig('poincare.png', bbox_inches='tight', dpi=300)
+for i in range(swarm.shape[0]):
+    #p_mag = np.linalg.norm(np.array([paths[::194,i,0], paths[::194,i,1]]))
+    #v_mag = np.linalg.norm(np.array([paths[::194,i,2], paths[::194,i,3]]))
+    plt.plot(paths[::194,i,0], paths[::194,i,1], '.')
+#plt.legend(fontsize=18)
+plt.savefig('position.png', bbox_inches='tight', dpi=300)
 plt.show()
 plt.clf()
+'''
+'''
+#Plot difference
+plt.figure(figsize=(8,8))
+#plt.axes().set_aspect('equal', 'datalim')
+#plt.grid()
+#plt.plot(venus[0::194],venus[1::194], '.', label='Venus')
+# Plot the swarm.
+t = np.linspace(0,1000,194138)
+diff = np.transpose(L_5(t)) - paths[:,-1,:2]
+diff = np.transpose(diff)
+#for i in range(1):
+plt.plot(t, (diff[0]**2 + diff[1]**2)**(0.5))
+#plt.legend(fontsize=18)
+#plt.savefig('difference.png', bbox_inches='tight', dpi=300)
+plt.show()
+plt.clf()
+'''
