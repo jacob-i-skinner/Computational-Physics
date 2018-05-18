@@ -81,17 +81,16 @@ def pathFinder(swarm, T, dt):
     
     Returns
     -------
-    paths : numpy array (T/dt, n_objects, 4)
-        Array storing position and velocity
-        coordinates for all n objects at all
-        times within the simulation.
+    paths : numpy array (T/dt, n_objects, 2)
+        Array storing position coordinates for 
+        all n objects at all times within the simulation.
     '''
     
     # Convert T from Venusian years to seconds.
     T = round(T*31556926*0.615198)
     
     # 'paths' stores positions and velocities
-    paths = np.zeros((round(T/dt), swarm.shape[0], 4))
+    paths = np.zeros((round(T/dt), swarm.shape[0], 2))
 
     # Calculate the path for each object - in series.
     for i in range(swarm.shape[0]):
@@ -100,7 +99,7 @@ def pathFinder(swarm, T, dt):
         old_pi = np.array([swarm[i,0], swarm[i,1]])
         old_vi = np.array([swarm[i,2], swarm[i,3]])
 
-        paths[0,i,0], paths[0,i,1], paths[0,i,2], paths[0,i,3] = swarm[i,0], swarm[i,1], swarm[i,2], swarm[i,3]
+        paths[0,i,0], paths[0,i,1] = swarm[i,0], swarm[i,1]
 
 
         # Use Heun's method to find the i+1th value.
@@ -108,10 +107,6 @@ def pathFinder(swarm, T, dt):
         pi = old_pi + (dt/2)*(2*old_vi + accelerator(pi_bar, 0)*dt)
 
         paths[1,i,0], paths[1,i,1] = pi[0], pi[1]
-        
-        #Store 1st velocity.
-        v = (pi - old_pi)/dt
-        paths[1,i,2], paths[1,i,3] = v[0], v[1]
 
         t = dt
 
@@ -127,12 +122,48 @@ def pathFinder(swarm, T, dt):
             t += dt
 
             paths[j,i,0], paths[j,i,1] = pi[0], pi[1]
-            
-            #Store subsequent velocity.
-            v = (pi - old_pi)/dt
-            paths[j,i,2], paths[j,i,3] = v[0], v[1]
     
     return paths
+def rotating(dt, paths):
+    '''
+    Transform position coordinates from a stationary
+    reference frame into one corotating with Venus.
+
+    Parameters
+    ----------
+    dt : float
+        Simulation timestep.
+    
+    paths : numpy array (T/dt, n_objects, 2)
+        Position coordinates of each object
+        in stationary frame.
+
+    Returns
+    -------
+    points : numpy array (T/dt, n_objects, 2)
+        Position coordinates of each object
+        in rotating frame.
+
+    '''
+    tau = 2*np.pi
+    P   = 1.941436081e7
+    cos = np.cos
+    sin = np.sin
+
+    points = np.zeros(paths.shape)
+    
+    # For each moment in time.
+    for i in range(paths.shape[0]):
+        # Define the phase angle corresponding to that time.
+        theta = tau*(dt*i%P/P)
+        
+        # For each object in the swarm.
+        for j in range(paths.shape[1]):
+            # Explicitly perform 'matrix math' of rotating by -theta.
+            points[i,j,0] = cos(theta)*paths[i,j,0] + sin(theta)*paths[i,j,1]
+            points[i,j,1] =-sin(theta)*paths[i,j,0] + cos(theta)*paths[i,j,1]
+    
+    return points
 def L_points():
     # Because the location of venus is a function of time,
     # the lagrangian points are also functions of time,
@@ -185,14 +216,19 @@ L3 = np.array([-108207845529.61938, 0, 0, -35019.950015715345])
 L4 = np.array([5.41040000e10, 9.37108769e10, -35020.00000788533*np.sqrt(3)/2, 35020.00000788533/2])
 L5 = np.array([5.41040000e10, -9.37108769e10, 35020.00000788533*np.sqrt(3)/2, 35020.00000788533/2])
 
+# Define useful constants
+AU = 1.496e11
+v_year = 0.615198 # Venus year in Earth years.
+P = 1.941436081e7 # orbital period of venus in seconds
 
 
 # Time in Venusian years!
-T = 1000
-dt = 100000
+T = 10
+real_T = T*31556926*v_year # Time in seconds
+dt = 10
 
 # Swarm shape: (number of objects, coords)
-swarm = np.array([L1, L2, L3, L4, L5])
+swarm = np.array([L1, L2])#, L3, L4, L5])
 
 # Calculate swarm trajectories.
 start = time.time()
@@ -200,59 +236,38 @@ paths = pathFinder(swarm, T, dt)
 end   = time.time()
 elapsed = end-start
 print('Finished in %s seconds.'%(round(elapsed,1)))
-print(paths.shape)
 
-
+'''
 # Plot orbital paths
 time = np.linspace(0, T*31556926*0.615198, round(T*31556926*0.615198/dt))
 venus = r_venus(time)
+plt.figure(figsize=(8,8))
+plt.axes().set_aspect('equal', 'datalim')
+plt.grid()
+#plt.plot(venus[0],venus[1], label='Venus')
+# Plot the swarm.
+for i in range(paths.shape[1]):
+    plt.plot(paths[:,i,0]/AU, paths[:,i,1]/AU, label='L%s'%(i+1))
+plt.ylabel('y (AU)')
+plt.xlabel('x (AU)')
+plt.legend(fontsize=16)
+#plt.savefig('lagrange paths.pdf', bbox_inches='tight')
+plt.show()
+'''
+
+# Transform paths into a rotating reference frame
+paths = rotating(dt,paths)
 
 plt.figure(figsize=(8,8))
 plt.axes().set_aspect('equal', 'datalim')
 plt.grid()
-plt.plot(venus[0],venus[1], label='Venus')
-#plt.scatter(0,0, s=1e3, c='y', label='Sun')
+#plt.plot(venus[0],venus[1], label='Venus')
 # Plot the swarm.
-#for i in range(paths.shape[1]):
-#    plt.plot(paths[:,i,0], paths[:,i,1], label='L%s'%(i+1))
-
-plt.plot(paths[:,2,0], paths[:,2,1], label='L%s'%(3))
-
-plt.legend(fontsize=18)
-#plt.savefig('lagrange paths.png', bbox_inches='tight', dpi=300)
+for i in range(paths.shape[1]):
+    plt.plot(paths[:,i,0]/AU, paths[:,i,1]/AU, label='L%s'%(i+1))
+plt.ylabel('y (AU)')
+plt.xlabel('x (AU)')
+plt.legend(fontsize=16)
+#plt.savefig('lagrange paths.pdf', bbox_inches='tight')
 plt.show()
-plt.clf()
-
-'''
-#Plot positions
-plt.figure(figsize=(8,8))
-#plt.axes().set_aspect('equal', 'datalim')
-plt.grid()
-#plt.plot(venus[0::194],venus[1::194], '.', label='Venus')
-# Plot the swarm.
-for i in range(swarm.shape[0]):
-    #p_mag = np.linalg.norm(np.array([paths[::194,i,0], paths[::194,i,1]]))
-    #v_mag = np.linalg.norm(np.array([paths[::194,i,2], paths[::194,i,3]]))
-    plt.plot(paths[::194,i,0], paths[::194,i,1], '.')
-#plt.legend(fontsize=18)
-plt.savefig('position.png', bbox_inches='tight', dpi=300)
-plt.show()
-plt.clf()
-'''
-'''
-#Plot difference
-plt.figure(figsize=(8,8))
-#plt.axes().set_aspect('equal', 'datalim')
-#plt.grid()
-#plt.plot(venus[0::194],venus[1::194], '.', label='Venus')
-# Plot the swarm.
-t = np.linspace(0,1000,194138)
-diff = np.transpose(L_5(t)) - paths[:,-1,:2]
-diff = np.transpose(diff)
-#for i in range(1):
-plt.plot(t, (diff[0]**2 + diff[1]**2)**(0.5))
-#plt.legend(fontsize=18)
-#plt.savefig('difference.png', bbox_inches='tight', dpi=300)
-plt.show()
-plt.clf()
-'''
+plt.close()
