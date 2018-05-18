@@ -198,16 +198,6 @@ def L_points():
     L5 = 1.08208e11*np.array([1, -np.sqrt(3)])/2
 
     return [np.array([L1,0]), np.array([L2,0]), np.array([L3,0]), L4, L5]
-def L_1(t):
-    return 107200101984.93997*np.array([np.cos(2*t*np.pi/1.941436081e7), np.sin(2*t*np.pi/1.941436081e7)])
-def L_2(t):
-    return 109222195896.43077*np.array([np.cos(2*t*np.pi/1.941436081e7), np.sin(2*t*np.pi/1.941436081e7)])
-def L_3(t):
-    return -108207845529.61938*np.array([np.cos(2*t*np.pi/1.941436081e7), np.sin(2*t*np.pi/1.941436081e7)])
-def L_4(t):
-    return 1.08208e11*np.array([np.cos(2*t*np.pi/1.941436081e7 + np.pi/3), np.sin(2*t*np.pi/1.941436081e7 + np.pi/3)])
-def L_5(t):
-    return 1.08208e11*np.array([np.cos(2*t*np.pi/1.941436081e7 - np.pi/3), np.sin(2*t*np.pi/1.941436081e7 - np.pi/3)])
 #print(L_points())
 # Initialize Lagrangian points with appropriate velocities.
 L1 = np.array([107200101984.93997, 0, 0, 34693.807965750275])
@@ -216,7 +206,7 @@ L3 = np.array([-108207845529.61938, 0, 0, -35019.950015715345])
 L4 = np.array([5.41040000e10, 9.37108769e10, -35020.00000788533*np.sqrt(3)/2, 35020.00000788533/2])
 L5 = np.array([5.41040000e10, -9.37108769e10, 35020.00000788533*np.sqrt(3)/2, 35020.00000788533/2])
 
-# Define useful constants
+# Define some useful constants.
 AU = 1.496e11
 v_year = 0.615198 # Venus year in Earth years.
 P = 1.941436081e7 # orbital period of venus in seconds
@@ -225,10 +215,10 @@ P = 1.941436081e7 # orbital period of venus in seconds
 # Time in Venusian years!
 T = 10
 real_T = T*31556926*v_year # Time in seconds
-dt = 10
+dt = 100
 
 # Swarm shape: (number of objects, coords)
-swarm = np.array([L1, L2])#, L3, L4, L5])
+swarm = np.array([L2])
 
 # Calculate swarm trajectories.
 start = time.time()
@@ -240,18 +230,18 @@ print('Finished in %s seconds.'%(round(elapsed,1)))
 '''
 # Plot orbital paths
 time = np.linspace(0, T*31556926*0.615198, round(T*31556926*0.615198/dt))
-venus = r_venus(time)
+venus = r_venus(time)/AU
 plt.figure(figsize=(8,8))
 plt.axes().set_aspect('equal', 'datalim')
 plt.grid()
-#plt.plot(venus[0],venus[1], label='Venus')
+plt.plot(venus[0],venus[1], label='Venus')
 # Plot the swarm.
 for i in range(paths.shape[1]):
     plt.plot(paths[:,i,0]/AU, paths[:,i,1]/AU, label='L%s'%(i+1))
 plt.ylabel('y (AU)')
 plt.xlabel('x (AU)')
 plt.legend(fontsize=16)
-#plt.savefig('lagrange paths.pdf', bbox_inches='tight')
+plt.savefig('Orbital motion.png', bbox_inches='tight', dpi=300)
 plt.show()
 '''
 
@@ -261,13 +251,12 @@ paths = rotating(dt,paths)
 plt.figure(figsize=(8,8))
 plt.axes().set_aspect('equal', 'datalim')
 plt.grid()
-#plt.plot(venus[0],venus[1], label='Venus')
 # Plot the swarm.
 for i in range(paths.shape[1]):
-    plt.plot(paths[:,i,0]/AU, paths[:,i,1]/AU, label='L%s'%(i+1))
+    plt.plot(paths[:,i,0]/AU, paths[:,i,1]/AU, label='L%s'%(2))
 plt.ylabel('y (AU)')
 plt.xlabel('x (AU)')
 plt.legend(fontsize=16)
-#plt.savefig('lagrange paths.pdf', bbox_inches='tight')
+#plt.savefig('rotating frame.png', bbox_inches='tight', dpi=300)
 plt.show()
 plt.close()
