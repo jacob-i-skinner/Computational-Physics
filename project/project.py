@@ -213,12 +213,12 @@ P = 1.941436081e7 # orbital period of venus in seconds
 
 
 # Time in Venusian years!
-T = 10
+T = 1
 real_T = T*31556926*v_year # Time in seconds
 dt = 100
 
 # Swarm shape: (number of objects, coords)
-swarm = np.array([L2])
+swarm = np.array([L5, L5+np.array([1e6, 0, 0, 0]), L5+np.array([-1e6, 0, 0, 0]), L5+np.array([0, 1e6, 0, 0]), L5+np.array([0, -1e6, 0, 0])])
 
 # Calculate swarm trajectories.
 start = time.time()
@@ -253,10 +253,10 @@ plt.axes().set_aspect('equal', 'datalim')
 plt.grid()
 # Plot the swarm.
 for i in range(paths.shape[1]):
-    plt.plot(paths[:,i,0]/AU, paths[:,i,1]/AU, label='L%s'%(2))
+    plt.plot(paths[:,i,0]/AU, paths[:,i,1]/AU, label='L%s'%(5))
 plt.ylabel('y (AU)')
 plt.xlabel('x (AU)')
 plt.legend(fontsize=16)
-#plt.savefig('rotating frame.png', bbox_inches='tight', dpi=300)
+plt.savefig('L5 ensemble.png', bbox_inches='tight', dpi=300)
 plt.show()
 plt.close()
