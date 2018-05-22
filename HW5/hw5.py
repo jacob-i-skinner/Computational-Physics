@@ -61,9 +61,9 @@ def DLA_round(n_walkers, gridsize):
 
         # If the cluster is too big, kill the process.
         # If this step is skipped, weird artifacts may appear.
-        #if r_start-5 >= gridsize/2:
-        #    print('Structure reached maximum size.')
-        #    break
+        if r_start-5 >= gridsize/2:
+            print('Structure reached maximum size.')
+            break
 
         # Define start angle.
         angle = 2*np.pi*np.random.rand()
@@ -85,8 +85,8 @@ def DLA_round(n_walkers, gridsize):
             else:
                 y += -1
 
-            # If walker approaches the bounds, kill it.
-            if x >= gridsize-2 or y >= gridsize-2 or x == 1 or y == 1:
+            # If walker approaches the bounds, kill it and send another.
+            if x >= gridsize-2 or y >= gridsize-2 or x <= 1 or y <= 1:
                 w += -1
                 break
 
@@ -104,8 +104,8 @@ def DLA_round(n_walkers, gridsize):
     print('Finished in ', round(end-start, 2), ' seconds')
     return grid
 
-grid = DLA_round(100000, 41)
-
+grid = DLA_round(1000000, 321)
+print(np.sum(grid, axis=None), ' cluster sites')
 plt.figure(figsize=(5,5))
 plt.pcolormesh(grid, cmap='Greys')
 
