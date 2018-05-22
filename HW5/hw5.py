@@ -12,20 +12,20 @@ array = np.array
 def maxExtent(grid):
     '''
     Calculate the maximum extent of growth
-    present in the DLA structure.
+    present in the cluster.
 
     Parameters
     ----------
     grid : numpy array (n, n)
-        The DLA structure.
+        The cluster.
     
     Returns
     -------
     r_max : int
-        The maximum extent of DLA growth
+        The maximum extent of cluster growth
     '''
     
-    # Find index of seed square.
+    # Find index of central element.
     middle = int(grid.shape[0]/2)
 
     # Pick elements with nonzero values.
@@ -46,7 +46,7 @@ def maxExtent(grid):
 def DLA_round(n_walkers, gridsize):
     '''
     Perform DLA with walkers at random points
-    around the structure.
+    around the cluster.
     '''
     start = time.time()
 
@@ -59,11 +59,11 @@ def DLA_round(n_walkers, gridsize):
         # Define start radius.
         r_start = 5 + maxExtent(grid)
 
-        # If the structure is too big, kill the process.
+        # If the cluster is too big, kill the process.
         # If this step is skipped, weird artifacts may appear.
-        if r_start-5 >= gridsize/2:
-            print('Structure reached maximum size.')
-            break
+        #if r_start-5 >= gridsize/2:
+        #    print('Structure reached maximum size.')
+        #    break
 
         # Define start angle.
         angle = 2*np.pi*np.random.rand()
@@ -104,7 +104,7 @@ def DLA_round(n_walkers, gridsize):
     print('Finished in ', round(end-start, 2), ' seconds')
     return grid
 
-grid = DLA_round(100000, 321)
+grid = DLA_round(100000, 41)
 
 plt.figure(figsize=(5,5))
 plt.pcolormesh(grid, cmap='Greys')
