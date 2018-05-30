@@ -54,7 +54,10 @@ def DLARound(n_walkers, gridsize):
     middle = int(gridsize/2)
     grid[middle,middle] = 1
 
-    for w in range(n_walkers):
+    # Tracks walker number.
+    w = 0
+
+    while w < n_walkers:
         # Define start radius.
         r_start = 5 + maxExtent(grid)
 
@@ -98,6 +101,9 @@ def DLARound(n_walkers, gridsize):
                 break
             
             p_current[0], p_current[1] = x, y
+        
+        # Update walker tally.
+        w += 1
 
     
     end = time.time()
@@ -211,8 +217,8 @@ def dimension(aggregator, gridsize):
     return mass, radius
 
 # Minimum gridsize is 3.
-gridsize = 121
-grid = DLALinear(gridsize**2, gridsize)
+gridsize = 1281
+grid = DLARound(60000, gridsize)
 #grid = DLALinear(gridsize**2, gridsize)
 #grid = seedWalk(10000000, gridsize)
 #mass, radius = dimension(DLALinear, gridsize)
@@ -238,9 +244,9 @@ plt.savefig('dimensionality_linear.pdf', bbox_inches='tight')
 # Plot the cluster.
 print(int(np.sum(grid, axis=None)), ' cluster sites')
 plt.figure(figsize=(7,7))
-plt.pcolormesh(grid + DLALinear(gridsize**2, gridsize) + DLALinear(gridsize**2, gridsize) + DLALinear(gridsize**2, gridsize), cmap='Greys')
+plt.pcolormesh(grid, cmap='Greys')
 plt.xticks([])
 plt.yticks([])
-plt.savefig('%sx%s_linear_walk.pdf'%(gridsize,gridsize), bbox_inches='tight')
+plt.savefig('%sx%s_circular_walk.pdf'%(gridsize,gridsize), bbox_inches='tight')
 
 plt.show()
