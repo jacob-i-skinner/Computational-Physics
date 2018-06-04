@@ -23,20 +23,26 @@ alpha =  m_venus/(m_venus + m_sun) # Venus' proportion of system mass
 AU = 1.496e11 # 1 AU in meters.
 v_year = 0.615198 # Venus year in Earth years.
 P = 1.941436081e7 # orbital period of venus in seconds
+w = 2*np.pi/P
 
 # Initialize Lagrangian points with appropriate velocities.
-L1 = array([107200101984.93997, 0, 0, 34693.807965750275])
-L2 = array([109222195896.43077, 0, 0, 35348.230270906584])
-L3 = array([-108207845529.61938, 0, 0, -35019.950015715345])
-L4 = array([5.41040000e10, 9.37108769e10, -35020.00000788533*np.sqrt(3)/2, 35020.00000788533/2])
-L5 = array([5.41040000e10, -9.37108769e10, 35020.00000788533*np.sqrt(3)/2, 35020.00000788533/2])
+L1 = array([107200101984.93997, 0, 0, 0])
+L2 = array([109222195896.43077, 0, 0, 0])
+L3 = array([-108207845529.61938, 0, 0, 0])
+L4 = array([5.41040000e10, 9.37108769e10, 0, 0])
+L5 = array([5.41040000e10, -9.37108769e10, 0,0])
 
-# Initialize Lagrangian points (IN ROTATING FRAME) with appropriate velocities.
-L1r = array([107200101984.93997, 0, 0, 0])
-L2r = array([109222195896.43077, 0, -10, 0])
-L3r = array([-108207845529.61938, 0, 10, 10])
-L4r = array([5.41040000e10, 9.37108769e10, 5, -5])
-L5r = array([5.41040000e10, -9.37108769e10, 0, 0])
+L1r, L2r, L3r, L4r, L5r = L1, L2, L3, L4, L5
+
+# Calculate velocities at those locations
+# L1,2,3 are all completely in the vertical
+L1[2:] = w*np.linalg.norm(L1)*array([cos(np.pi/2),sin(np.pi/2)])
+L2[2:] = w*np.linalg.norm(L2)*array([cos(np.pi/2),sin(np.pi/2)])
+L3[2:] = w*np.linalg.norm(L3)*array([cos(-np.pi/2),sin(-np.pi/2)])
+
+# L4,5 are both rotated 60 degrees from the vertical
+L4[2:] = w*np.linalg.norm(L4)*array([cos(5*np.pi/6),sin(5*np.pi/6)])
+L5[2:] = w*np.linalg.norm(L5)*array([cos(np.pi/6),sin(np.pi/6)])
 
 def r_venus(t):
     '''
@@ -85,7 +91,7 @@ def inertialAccelerator(r, t):
     # Find the acceleration due to venus
     venus_sep      = Rv(t)-r
     venus_sep_norm = norm(venus_sep)
-    venus_accel    = venus_sep*(6.67428e-11*4.8675e+24)/(venus_sep_norm**3)
+    venus_accel    = venus_sep*(6.67428e-11*4.8675e24)/(venus_sep_norm**3)
 
     # Find acceleration due to sun
     sol_sep      = -r
@@ -125,22 +131,21 @@ def inertialPathFinder(swarm, T, dt):
 
     # Calculate the path for each object - in series.
     for i in range(swarm.shape[0]):
-        
         #Store initial values.
         old_vi = swarm[i,2:]
-        paths[0,i,:2] = swarm[i,:2]
+        old_pi = swarm[i,:2]
+        paths[0,i,:] = old_pi
 
+        # Use Heun's method to find 1st position
+        pi_bar = old_pi + old_vi*dt
+        paths[1,i,:] = old_pi + (dt/2)*(2*old_vi + inertialAccelerator(old_pi, 0) + inertialAccelerator(pi_bar, dt))
 
-        # Use Heun's method to find the i+1th value.
-        paths[1,i,:2] = paths[0,i,:2] + old_vi*dt + 0.5*inertialAccelerator(paths[0,i,:2], 0)*dt**2
+        t=dt
 
-        t = dt
-
-        # Use Verlet method to calculate trajectory for i'th object at time 'j'.
+        # Use Verlet Integration to calculate all following positions.
         for j in range(2, round(T/dt)):
+            paths[j,i,:] = 2*paths[j-1,i,:] + inertialAccelerator(paths[j-1,i,:], t)*dt**2 - paths[j-2,i,:]
             
-            paths[j,i,:2] = 2*paths[j-1,i,:2] + inertialAccelerator(paths[j-1,i,:2], t)*dt**2 - paths[j-2,i,:2]
-
             t += dt
     
     
@@ -149,7 +154,9 @@ def inertialPathFinder(swarm, T, dt):
     print('Finished in %s seconds.'%(round(elapsed,1)))
 
     return paths
-def rotatingAccelerator(r):
+
+# Couldn't get these two working
+def rotatingAccelerator(r, v):
     '''
     Calculate the net acceleration (Sol + Venus) that an
     object at position r feels at time t.
@@ -173,7 +180,7 @@ def rotatingAccelerator(r):
     # Find the acceleration due to venus.
     venus_sep      = array([1.08208e11, 0])-r
     venus_sep_norm = norm(venus_sep)
-    venus_accel    = venus_sep*(6.67428e-11*4.8675e+24)/(venus_sep_norm**3)
+    venus_accel    = venus_sep*(6.67428e-11*4.8675e24)/(venus_sep_norm**3)
 
     # Find acceleration due to sun.
     sol_sep      = -r
@@ -183,8 +190,11 @@ def rotatingAccelerator(r):
     # Find the centrifugal acceleration. (2pi/T)**2 is precomputed
     cent_accel = r*1.047402348934733e-13
 
-    net_accel = venus_accel + sol_accel + cent_accel
-    return -net_accel
+    # Find the coriolis acceleration. -2 omega X velocity
+    corio_accel= -2*np.cross(array([0,0,w]), array([v[0],v[1],0]))
+
+    net_accel = venus_accel + sol_accel + cent_accel + corio_accel[:2]
+    return net_accel
 def rotatingPathFinder(swarm, T, dt):
     '''
     Perform gravitational simulation (IN A ROTATING REFERENCE FRAME)
@@ -215,23 +225,25 @@ def rotatingPathFinder(swarm, T, dt):
     # 'paths' stores positions and velocities
     paths = np.zeros((round(T/dt), swarm.shape[0], 2))
 
-    # Calculate the path for each object - in series.
+    # For each object in the swarm.
     for i in range(swarm.shape[0]):
         
         #Store initial values.
-        old_vi = swarm[i,2:]
+        vi = swarm[i,2:]
         paths[0,i,:2] = swarm[i,:2]
 
 
         # Use Heun's method to find the i+1th value.
-        paths[1,i,:2] = paths[0,i,:2] + old_vi*dt + 0.5*rotatingAccelerator(paths[0,i,:2], 0)*dt**2
+        paths[1,i,:2] = paths[0,i,:2] + vi*dt + 0.5*rotatingAccelerator(paths[0,i,:2], vi)*dt**2
+        vi = (paths[1,i,:2]-paths[0,i,:2])/dt
 
         t = dt
 
         # Use Verlet method to calculate trajectory for i'th object at time 'j'.
+        # Coriolis force is velocity dependent -> this algorithm does not conserve energy.
         for j in range(2, round(T/dt)):
-            
-            paths[j,i,:2] = 2*paths[j-1,i,:2] + rotatingAccelerator(paths[j-1,i,:2], t)*dt**2 - paths[j-2,i,:2]
+            paths[j,i,:2] = 2*paths[j-1,i,:2] + rotatingAccelerator(paths[j-1,i,:2], vi)*dt**2 - paths[j-2,i,:2]
+            vi = (paths[j,i,:2]-paths[j-1,i,:2])/dt
 
             t += dt
     
@@ -286,26 +298,35 @@ def rotating(dt, paths):
 # Time in Venusian years!
 T = 1
 real_T = T*31556926*v_year # Time in seconds
-dt = 10000
+dt = 100
 
 '''
 # Swarm shape: (number of objects, coords)
-swarm = array([L4r])
+swarm = array([L4r, L5r])
 # Calculate rotating frame trajectories.
 paths = rotatingPathFinder(swarm, T, dt)
 '''
 
+# Position perturbation amount
+delta = 1e8
+
 # Swarm shape: (number of objects, coords)
-swarm = array([L2])
+swarm = array([L1, L2, L3, L4, L5])
+#swarm = array([L4+array([-delta,delta,0,0]), L4+array([-delta,-delta,0,0]), L4+array([-delta,0,0,0]), L4+array([0,0,0,0]),
+                #L4+array([0,-delta,0,0]), L4+array([-delta/2,delta/2,0,0]), L4+array([-delta/2,-delta,0,0]), L4+np.array([-delta/2,delta,0,0])])
 # Calculate inertial frame trajectories and convert to rotating frame.
 paths = inertialPathFinder(swarm, T, dt)
 paths = rotating(dt,paths)
 # As a check, plot Venus' position in the rotating frame (it shouldn't move).
-venus = np.zeros((round(real_T/dt), 1, 2))
-x = np.linspace(0,real_T,round(real_T/dt))
-for i in range(venus.shape[0]):
-    venus[i,0,:] = r_venus(x[i])[:]
-v_path = rotating(dt, venus)/AU
+#venus = np.zeros((round(real_T/dt), 1, 2))
+#x = np.linspace(0,real_T,round(real_T/dt))
+#for i in range(venus.shape[0]):
+#    venus[i,0,:] = r_venus(x[i])[:]
+#v_path = rotating(dt, venus)/AU
+
+
+#for i in range(swarm.shape[0]):
+#    print(round(np.linalg.norm(paths[-1,i,:2] - paths[0,i,:2])/AU, 4))
 
 
 plt.figure(figsize=(7,7))
@@ -315,8 +336,10 @@ plt.grid()
 for i in range(paths.shape[1]):
     plt.plot(paths[:,i,0]/AU, paths[:,i,1]/AU, label='L%s'%(i+1))
 #plt.plot(v_path[:,0,0], v_path[:,0,1])
+plt.xlim(0.71,0.735)
+plt.ylim(-0.01,0.015)
 plt.ylabel('y (AU)')
 plt.xlabel('x (AU)')
-#plt.legend(fontsize=16)
-#plt.savefig('L5 ensemble.png', bbox_inches='tight', dpi=300)
+#plt.legend(fontsize=16, loc='center')
+plt.savefig('L2 drift.png', bbox_inches='tight', dpi=300)
 plt.show()
