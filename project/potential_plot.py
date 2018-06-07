@@ -4,31 +4,11 @@ from matplotlib import rcParams
 rcParams['xtick.direction'] = 'in'
 rcParams['ytick.direction'] = 'in'
 '''
-A 3-body gravity simulator. Simulates the mutual attraction and resultant
-motion of Sol, Earth, Jupiter. Uses Heun's method to perform an initial step,
-then steps into a velocity verlet loop until complete.
-
-All internal calculations are in SI units.
+Just trying to make an effective potential plot
 '''
 
-# Define some useful constants.
-m_venus = 4.8675e24
-m_sun   = 1.98955e30
-R = 1.08208e11 # Venus orbital radius.
-alpha =  m_venus/(m_venus + m_sun) # Venus' proportion of system mass
-AU = 1.496e11 # 1 AU in meters.
-v_year = 0.615198 # Venus year in Earth years.
-P = 1.941436081e7 # orbital period of venus in seconds
 
-# Calculate Lagrangian point locations.
-L1 = np.array([R*(1-(alpha/3)**(1/3)), 0])
-L2 = np.array([R*(1+(alpha/3)**(1/3)), 0])
-L3 = np.array([-R*(1-(5*alpha/12)**(1/3)), 0])
-L4 = np.array([0.5*R*((m_sun-m_venus)/(m_sun+m_venus)), np.sqrt(3)*0.5*R])
-L5 = np.array([0.5*R*((m_sun-m_venus)/(m_sun+m_venus)), -np.sqrt(3)*0.5*R])
-
-
-def rotatingAccelerator(r, t):
+def rotatingAccelerator(r):
     '''
     Calculate the net acceleration (Sol + Venus) that an
     object at position r feels at time t.
@@ -47,21 +27,24 @@ def rotatingAccelerator(r, t):
         Acceleration vector felt by object.
     '''
 
-    # Find the acceleration due to venus.
-    venus_sep      = np.array([1.08208e11, 0])-r
+    # Find the acceleration due to object 1.
+    venus_sep      = np.array([50, 0])-r
+    #print(venus_sep+r)
     venus_sep_norm = np.linalg.norm(venus_sep)
-    venus_accel    = venus_sep*(6.67428e-11*4.8675e+24)/(venus_sep_norm**3)
+    venus_accel    = 1000*middle/(venus_sep_norm)
+    vpot = np.linalg.norm(venus_accel)
 
-    # Find acceleration due to sun.
+    # Find acceleration due to object 0.
     sol_sep      = -r
     sol_sep_norm = np.linalg.norm(sol_sep)
-    sol_accel    = sol_sep*(6.67428e-11*1.98955e30)/(sol_sep_norm**3)
+    sol_accel    = 1000*middle/(sol_sep_norm)
+    spot = np.linalg.norm(sol_accel)
 
-    # Find the centrifugal acceleration. (2pi/T)**2 is precomputed
-    cent_accel = r*1.047402348934733e-13
+    # Find the centrifugal acceleration.
+    cent_accel = (np.linalg.norm(r)**2)/(0.1)
 
-    net_accel = venus_accel + sol_accel + cent_accel
-    return -net_accel
+    net_accel = vpot + spot - cent_accel
+    return net_accel
 def rotatingPathFinder(swarm, T, dt):
     '''
     Perform gravitational simulation (IN A ROTATING REFERENCE FRAME)
@@ -120,34 +103,19 @@ def rotatingPathFinder(swarm, T, dt):
     
     return paths
 
-# Time in Venusian years!
-T = 200
-real_T = T*31556926*v_year # Time in seconds
-dt = 10000
+gridsize = 161
 
-# Swarm shape: (number of objects, coords)
-swarm = np.array([L4])
+middle = gridsize//2
 
-# Calculate swarm trajectories.
-paths = pathFinder(swarm, T, dt)
+potential = [[rotatingAccelerator(np.array([x-middle,y-middle])) for x in range(gridsize)] for y in range(gridsize)]
 
-# Transform paths into a rotating reference frame
-#paths = rotating(dt,paths)
-
-plt.figure(figsize=(8,8))
+plt.figure(figsize=(5,5))
 plt.axes().set_aspect('equal', 'datalim')
-plt.grid()
-# Plot the swarm.
-for i in range(paths.shape[1]):
-    plt.plot(paths[:,i,0]/AU, paths[:,i,1]/AU, label='L%s'%(i+1))
 
-venus = plt.Circle((R/AU, 0), 6051.8e3/AU)
-fig = plt.gcf()
-ax = fig.gca()
-ax.add_artist(venus)
+plt.pcolormesh(potential)
+plt.colorbar()
 
-plt.ylabel('y (AU)')
-plt.xlabel('x (AU)')
-plt.legend(fontsize=16)
+plt.ylabel('y')
+plt.xlabel('x')
 #plt.savefig('L5 ensemble.png', bbox_inches='tight', dpi=300)
 plt.show()
