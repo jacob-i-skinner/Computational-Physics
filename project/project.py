@@ -296,9 +296,9 @@ def rotating(dt, paths):
     return points
 
 # Time in Venusian years!
-T = 1
+T = 2
 real_T = T*31556926*v_year # Time in seconds
-dt = 100
+dt = 1000
 
 '''
 # Swarm shape: (number of objects, coords)
@@ -311,35 +311,44 @@ paths = rotatingPathFinder(swarm, T, dt)
 delta = 1e8
 
 # Swarm shape: (number of objects, coords)
-swarm = array([L1, L2, L3, L4, L5])
+swarm = array([L1, L2, L3, L4, L5, array([57909050000, 0, 0, 47362])])
 #swarm = array([L4+array([-delta,delta,0,0]), L4+array([-delta,-delta,0,0]), L4+array([-delta,0,0,0]), L4+array([0,0,0,0]),
                 #L4+array([0,-delta,0,0]), L4+array([-delta/2,delta/2,0,0]), L4+array([-delta/2,-delta,0,0]), L4+np.array([-delta/2,delta,0,0])])
 # Calculate inertial frame trajectories and convert to rotating frame.
 paths = inertialPathFinder(swarm, T, dt)
 paths = rotating(dt,paths)
-# As a check, plot Venus' position in the rotating frame (it shouldn't move).
-#venus = np.zeros((round(real_T/dt), 1, 2))
-#x = np.linspace(0,real_T,round(real_T/dt))
-#for i in range(venus.shape[0]):
-#    venus[i,0,:] = r_venus(x[i])[:]
-#v_path = rotating(dt, venus)/AU
 
 
-#for i in range(swarm.shape[0]):
-#    print(round(np.linalg.norm(paths[-1,i,:2] - paths[0,i,:2])/AU, 4))
+#dy = paths[-1,0,1]-r_venus(1)[1]-paths[0,0,1]-r_venus(0)[1]
+#dx = paths[-1,0,0]-r_venus(1)[1]-paths[0,0,0]-r_venus(0)[0]
+#print(dy, dx)
+#print(180 + (180/np.pi)*np.arctan(dy/dx))
 
 
 plt.figure(figsize=(7,7))
 plt.axes().set_aspect('equal', 'datalim')
-plt.grid()
+#plt.grid()
 # Plot the swarm.
-for i in range(paths.shape[1]):
+for i in range(5):
     plt.plot(paths[:,i,0]/AU, paths[:,i,1]/AU, label='L%s'%(i+1))
-#plt.plot(v_path[:,0,0], v_path[:,0,1])
-plt.xlim(0.71,0.735)
-plt.ylim(-0.01,0.015)
+plt.plot(paths[:,-1,0]/AU, paths[:,-1,1]/AU, label='Mercury')
+#plt.plot(0,0,'.')
+#plt.plot(dx,dy, '.')
 plt.ylabel('y (AU)')
 plt.xlabel('x (AU)')
-#plt.legend(fontsize=16, loc='center')
-plt.savefig('L2 drift.png', bbox_inches='tight', dpi=300)
+
+# Plot Venus
+venus = plt.Circle((R/AU, 0), 6051.8e3/AU)
+fig = plt.gcf()
+ax = fig.gca()
+ax.add_artist(venus)
+
+# Plot Sol
+sol = plt.Circle((0, 0), 695.508e6/AU)
+fig = plt.gcf()
+ax = fig.gca()
+ax.add_artist(sol)
+
+plt.legend(fontsize=16, loc='upper left')
+plt.savefig('drift.pdf', bbox_inches='tight')
 plt.show()
